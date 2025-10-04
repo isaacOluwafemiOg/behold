@@ -1,0 +1,11 @@
+services:
+  streamlit_app:
+    container_name: behold_app_util
+    build:
+      context: . # Build the image from the Dockerfile in the current directory
+    platform: linux/amd64
+    volumes:
+      - .:/app # Mount the local directory to the container's /app directory
+    ports:
+      - "8080:8080"
+    command: ["streamlit", "run", "app.py", "--server.port", "8080", "--server.address", "0.0.0.0"]

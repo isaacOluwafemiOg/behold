@@ -253,9 +253,10 @@ def main():
                   Objects of Interest dataset. 80% which corresponds to 7650 observations were used for\
                  training the model')
         st.write('Below is a chart that shows the balance in the target distribution:')
-        target_dist = train['koi_pdisposition'].value_counts()
-        fig_tdist,ax_tdist = plt.subplots(figsize=(3,3))
-        sns.barplot(target_dist,ax=ax_tdist,palette='Set3')
+        target_dist = pd.DataFrame(train['koi_pdisposition'].value_counts())
+        
+        fig_tdist,ax_tdist = plt.subplots(figsize=(5,2))
+        sns.barplot(y=target_dist.index,x=target_dist['count'],ax=ax_tdist,palette='Set3')
 
         st.pyplot(fig_tdist)
 
@@ -308,7 +309,7 @@ def main():
         koi_dor = fcol1.number_input('Planet-Star Distance over Star Radius',
                                    min_value=0.00,value=15.06,step=0.01)
         
-        koi_max_sngle_ev = fcol1.number_input('Maximum Single Event Statistic',
+        koi_max_sngle_ev = fcol2.number_input('Maximum Single Event Statistic',
                                    min_value=0.00,value=7.235,step=0.001)
 
         koi_max_mult_ev = fcol2.number_input('Maximum Multiple Event Statistic',
