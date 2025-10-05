@@ -16,6 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 COPY ./data /app/data
 COPY ./app.py /app/app.py
 COPY ./models /app/models
+COPY ./static /app/static
+COPY ./.streamlit /app/.streamlit
 
 EXPOSE 8080
 
