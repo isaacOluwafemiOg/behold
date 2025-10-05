@@ -16,9 +16,9 @@ from streamlit_shap import st_shap
 st.set_page_config(layout='wide', initial_sidebar_state='expanded')
 
 
-TRAIN_SCORE = 0.977
-VALID_SCORE = 0.899
-TEST_SCORE = 0.893
+TRAIN_SCORE = 0.9722
+VALID_SCORE = 0.9009
+TEST_SCORE = 0.8977
 
 SELECTED_FEATURES = ['koi_duration', 'koi_ror', 'koi_prad', 'koi_sma', 'koi_dor','koi_max_sngle_ev',
                       'koi_max_mult_ev', 'koi_model_snr', 'koi_num_transits','koi_fwm_stat_sig',
