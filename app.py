@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import catboost
 import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px # plotly for creating interactive plots
 from dython.nominal import associations
 from sklearn.metrics import f1_score, confusion_matrix,ConfusionMatrixDisplay
@@ -87,8 +86,7 @@ def get_col_overview(df,col,desc):
     col: str
     the name of the feature column
 
-    has_desc: bool
-    Is there a separate dataframe containing descriptions on what each column represents?
+    desc: pd.Dataframe
 
     Returns
     -------
@@ -251,11 +249,12 @@ def main():
                 st.write("")
                 
                 st.subheader('Feature Importance')
-                st.write('The ML system makes use of a relevant subset of 22 features to predict the disposition\
+                st.write('The ML system makes use of a relevant subset of 14 features to predict the disposition\
                         of an observation. The following are the weights assigned to each feature.')
                 
                 feature_imp_df
-                figimp = px.bar(feature_imp_df,x='Feature',y='Importance',title='Feature Importance')
+                figimp = px.bar(feature_imp_df,x='Feature',y='Importance',title='Feature Importance',
+                                template='plotly_dark')
                 
                 st.plotly_chart(figimp)
 
@@ -266,12 +265,13 @@ def main():
                     Objects of Interest dataset. 80% which corresponds to 7650 observations were used for\
                     training the model')
             st.write('Below is a chart that shows the balance in the target distribution:')
-            target_dist = pd.DataFrame(train['koi_pdisposition'].value_counts())
+            target_dist = pd.DataFrame(train['koi_pdisposition'].value_counts()).reset_index()
+            target_dist.columns = ['Disposition','Count']
             
-            fig_tdist,ax_tdist = plt.subplots(figsize=(5,2))
-            sns.barplot(y=target_dist.index,x=target_dist['count'],ax=ax_tdist,palette='Set3')
+            fig_tdist = px.bar(target_dist,x='Count',y='Disposition',title='Target Distribution',
+                               template='plotly_dark')
 
-            st.pyplot(fig_tdist)
+            st.plotly_chart(fig_tdist)
 
             st.write('The Table below shows the number of missing values for each feature')
             na_df = missing_data(train[SELECTED_FEATURES])
