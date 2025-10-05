@@ -5,6 +5,7 @@ import numpy as np
 import catboost
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px # plotly for creating interactive plots
 from dython.nominal import associations
 from sklearn.metrics import f1_score, confusion_matrix,ConfusionMatrixDisplay
 import joblib
@@ -14,6 +15,8 @@ from streamlit_shap import st_shap
 
 
 st.set_page_config(layout='wide', initial_sidebar_state='expanded')
+
+plt.style.use('dark_background')
 
 
 TRAIN_SCORE = 0.9722
@@ -154,8 +157,21 @@ def predict_batch(pdata,models):
 
 def main():
     st.sidebar.header('A World Away: Hunting for Exoplanets with AI')
-    #st.sidebar.image(imag,width=80)#,use_column_width=True)
-    #st.sidebar.image(imag,use_column_width=True)
+    image = './app/static/kepler22b.jpg'
+
+    css = f'''
+    <style>
+        .stApp {{
+            background-image: url({image});
+            background-size: cover;
+
+        }}
+        .stApp > header {{
+            background-color: transparent;
+        }}
+    </style>
+    '''
+    st.markdown(css, unsafe_allow_html=True)
     mode =st.sidebar.selectbox('Menu:',['Explore','Single Prediction','Batch Prediction'],index=0)
     st.sidebar.markdown('''
     ---
@@ -179,6 +195,7 @@ def main():
         
 
     if mode == 'Explore':
+        st.header('Explorer')
         with st.spinner("loading data and performance statistics... Pleae wait."):
             
             train = pd.read_csv('./data/train_data.csv')
@@ -187,106 +204,102 @@ def main():
             feature_imp_df = pd.read_csv('./data/feature_importance.csv')
             feature_imp_df.columns = ['Feature','Importance']
 
-        st.header('Explore the Model')
-
-        st.write('The predictions of this web application are powered by a series of 5 Catboost\
-                 Classifier models trained each on a different fold of 5 folds of training data\
-                  obtained from the\
-                  [Kepler Objects of Interest](https://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=cumulative) datatest\
-                  of the NASA Exoplanet Archive')
+        tab_model, tab_data = st.tabs(['Model Explorer','Data Explorer'])
         
-        st.write('The catboost classifier model optimal hyperparameters values for the training process\
-                  was:')
-        st.write(MODEL_HYPERPARAMETERS)
-        
-        st.write('Below are the results of the model evaluation:')
-        col1, col2, col3 = st.columns(3,gap='medium')
-    
-        col1.metric('Train F1 score:',
-                     str(round(TRAIN_SCORE*100,2))+'%',
-                     help='Performance of model on train data')
-        col2.metric('Cross Validation F1 score:',
-                     str(round(VALID_SCORE*100,2))+'%',
-                     help='Performance of model using a 5-fold stratified cross-validation')
-        col3.metric('Test F1 score:',
-                     str(round(TEST_SCORE*100,2))+'%',
-                     help='Performance of model on test data of 1913 observations')
-        
-        if st.button('Further Explore the Model'):
-        
-            st.subheader('Confusion Matrix ("Using Hold-Out Test Data")')
-            cm = confusion_matrix(with_prediction['koi_pdisposition'],with_prediction['prediction'])
-
-            # Create and plot the ConfusionMatrixDisplay
-            disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                                        display_labels=['FALSE POSITIVE','CANDIDATE'])
+        with tab_model:
+            st.write('The predictions of this web application are powered by a series of 5 Catboost\
+                    Classifier models trained each on a different fold of 5 folds of training data\
+                    obtained from the\
+                    [Kepler Objects of Interest](https://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=cumulative) datatest\
+                    of the NASA Exoplanet Archive')
             
-
-            fig, ax = plt.subplots(figsize=(6, 6)) # Create a figure and an axes object
-            disp.plot(cmap=plt.cm.Blues, ax=ax) # Plot on the created axes
-            plt.title("Confusion Matrix")
-            st.pyplot(fig) # Display the plot in Streamlit
-        
-        
-            st.write("")
-            st.write("")
+            st.write('The catboost classifier model optimal hyperparameters values for the training process\
+                    was:')
+            st.write(MODEL_HYPERPARAMETERS)
             
-            st.subheader('Feature Importance')
-            st.write('The ML system makes use of a relevant subset of 22 features to predict the disposition\
-                    of an observation. The following are the weights assigned to each feature.')
-            
-            feature_imp_df
-            figfi,axfi = plt.subplots(figsize=(6,6))
-            sns.barplot(feature_imp_df.head(5),ax=axfi,
-                        y='Feature',
-                        x='Importance')
-            st.pyplot(figfi)
-
-
-        st.markdown('''
-
-         ---
-        ''')
-
-        st.header('Explore the Data')
-        st.write('The data used to train the model was obtained by an 80-20 stratified split of the Kepler\
-                  Objects of Interest dataset. 80% which corresponds to 7650 observations were used for\
-                 training the model')
-        st.write('Below is a chart that shows the balance in the target distribution:')
-        target_dist = pd.DataFrame(train['koi_pdisposition'].value_counts())
+            st.write('Below are the results of the model evaluation:')
+            col1, col2, col3 = st.columns(3,gap='medium')
         
-        fig_tdist,ax_tdist = plt.subplots(figsize=(5,2))
-        sns.barplot(y=target_dist.index,x=target_dist['count'],ax=ax_tdist,palette='Set3')
+            col1.metric('Train F1 score:',
+                        str(round(TRAIN_SCORE*100,2))+'%',
+                        help='Performance of model on train data')
+            col2.metric('Cross Validation F1 score:',
+                        str(round(VALID_SCORE*100,2))+'%',
+                        help='Performance of model using a 5-fold stratified cross-validation')
+            col3.metric('Test F1 score:',
+                        str(round(TEST_SCORE*100,2))+'%',
+                        help='Performance of model on test data of 1913 observations')
+            
+            with st.expander('Further Explore the Model'):
+            
+                st.subheader('Test Set Confusion Matrix')
+                cm = confusion_matrix(with_prediction['koi_pdisposition'],with_prediction['prediction'])
 
-        st.pyplot(fig_tdist)
-
-        st.write('The Table below shows the number of missing values for each feature')
-        na_df = missing_data(train[SELECTED_FEATURES])
-        st.dataframe(na_df)
-
-        st.write('')
-        #Correlation with target
-
-        correlation_matrix = associations(train[SELECTED_FEATURES+['koi_pdisposition']],
-                                           compute_only=True)["corr"]
-        cortab = pd.DataFrame(correlation_matrix['koi_pdisposition'].abs().sort_values(ascending=False))
-        cortab = cortab.drop('koi_pdisposition')
-        st.write('Correlation of Features with the target variable')
-        st.dataframe(cortab)
-
-
-        if st.button("Further Explore the Data"):   
-            chosen_feature = st.selectbox('Select a Feature to dive deeper:',SELECTED_FEATURES,index=1)
-
-            get_col_overview(train,chosen_feature,feat_desc)
-
-            if chosen_feature in train.select_dtypes(include=np.number).columns:
+                # Create and plot the ConfusionMatrixDisplay
+                disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                                            display_labels=['FALSE POS.','CANDIDATE'])
                 
-                with st.spinner('Constructing Scatterplot... please wait'):
-                    st.write(f'scatter plot of {chosen_feature} feature vs other features')
-                    plot_feature_scatter(train[SELECTED_FEATURES+['koi_pdisposition']],chosen_feature)
 
-        st.write('''***''')
+                
+                figcp, axcp = plt.subplots(figsize=(3.7, 2.7)) # Create a figure and an axes object
+                disp.plot(cmap=plt.cm.Blues, ax=axcp) # Plot on the created axes
+                plt.title("Confusion Matrix")
+                st.pyplot(figcp) # Display the plot in Streamlit
+            
+            
+                st.write("")
+                st.write("")
+                
+                st.subheader('Feature Importance')
+                st.write('The ML system makes use of a relevant subset of 22 features to predict the disposition\
+                        of an observation. The following are the weights assigned to each feature.')
+                
+                feature_imp_df
+                figimp = px.bar(feature_imp_df,x='Feature',y='Importance',title='Feature Importance')
+                
+                st.plotly_chart(figimp)
+
+
+        
+        with tab_data:
+            st.write('The data used to train the model was obtained by an 80-20 stratified split of the Kepler\
+                    Objects of Interest dataset. 80% which corresponds to 7650 observations were used for\
+                    training the model')
+            st.write('Below is a chart that shows the balance in the target distribution:')
+            target_dist = pd.DataFrame(train['koi_pdisposition'].value_counts())
+            
+            fig_tdist,ax_tdist = plt.subplots(figsize=(5,2))
+            sns.barplot(y=target_dist.index,x=target_dist['count'],ax=ax_tdist,palette='Set3')
+
+            st.pyplot(fig_tdist)
+
+            st.write('The Table below shows the number of missing values for each feature')
+            na_df = missing_data(train[SELECTED_FEATURES])
+            st.dataframe(na_df)
+
+            st.write('')
+            #Correlation with target
+
+            correlation_matrix = associations(train[SELECTED_FEATURES+['koi_pdisposition']],
+                                            compute_only=True)["corr"]
+            cortab = pd.DataFrame(correlation_matrix['koi_pdisposition'].abs().sort_values(ascending=False))
+            cortab = cortab.drop('koi_pdisposition')
+            st.write('Correlation of Features with the target variable')
+            st.dataframe(cortab)
+
+
+            with st.expander("Further Explore the Data"):   
+                chosen_feature = st.selectbox('Select a Feature to dive deeper:',SELECTED_FEATURES,index=1)
+
+                get_col_overview(train,chosen_feature,feat_desc)
+
+                if chosen_feature in train.select_dtypes(include=np.number).columns:
+                    
+                    with st.spinner('Constructing Scatterplot... please wait'):
+                        st.write(f'scatter plot of {chosen_feature} feature vs other features')
+                        plot_feature_scatter(train[SELECTED_FEATURES+['koi_pdisposition']],chosen_feature)
+
+            
 
 
     if mode == 'Single Prediction':
